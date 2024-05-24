@@ -1,3 +1,6 @@
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
+
 --[[
 
 =====================================================================
@@ -154,8 +157,54 @@ vim.opt.cursorline = true
 -- Minimal number of screen lines to keep above and below the cursor.
 vim.opt.scrolloff = 10
 
+-- my settings start
+
+-- Set global indentation to use spaces instead of tabs
+vim.o.expandtab = true    -- Use spaces instead of tabs
+vim.o.shiftwidth = 4      -- Number of spaces to use for each step of (auto)indent
+vim.o.tabstop = 4         -- Number of spaces that a <Tab> in the file counts for
+
+-- Function to set local options
+local function set_local_options(filetype, options)
+  vim.cmd('autocmd FileType ' .. filetype .. ' setlocal ' .. options)
+end
+
+-- Set indentation for JavaScript and TypeScript to 2 spaces
+set_local_options('javascript', 'shiftwidth=2 tabstop=2')
+set_local_options('typescript', 'shiftwidth=2 tabstop=2')
+
+-- my settngs end
+
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
+-- Vim for Colemak
+local function map(mode, lhs, rhs, opts)
+  local options = { noremap = true, silent = true }
+  if opts then
+    options = vim.tbl_extend('force', options, opts)
+  end
+  vim.api.nvim_set_keymap(mode, lhs, rhs, options)
+end
+
+map('', 'n', 'j', {})
+map('', 'e', 'k', {})
+map('', 'i', 'l', {})
+map('', 'j', 'e', {})
+map('', 'k', 'n', {})
+map('', 'l', 'i', {})
+
+map('', 'N', 'J', {})
+map('', 'E', 'K', {})
+map('', 'I', 'L', {})
+map('', 'J', 'E', {})
+map('', 'K', 'N', {})
+map('', 'L', 'I', {})
+
+map('i', ',s', '<ESC>', {})
+map('', ',s', '<ESC>:w<CR>', {})
+map('', ',q', '<ESC>:bd<cr>', {})
+map('', '<c-q>', '<ESC>:q<cr>', {})
+
 
 -- Set highlight on search, but clear on pressing <Esc> in normal mode
 vim.opt.hlsearch = true
@@ -240,6 +289,11 @@ require('lazy').setup({
   -- "gc" to comment visual regions/lines
   { 'numToStr/Comment.nvim', opts = {} },
 
+  'github/copilot.vim',
+
+  -- Detect tabstop and shiftwidth automatically
+  -- 'tpope/vim-sleuth',
+
   -- Here is a more advanced example where we pass configuration
   -- options to `gitsigns.nvim`. This is equivalent to the following Lua:
   --    require('gitsigns').setup({ ... })
@@ -294,6 +348,43 @@ require('lazy').setup({
         ['<leader>h'] = { 'Git [H]unk' },
       }, { mode = 'v' })
     end,
+  },
+  --
+  -- {
+  --   -- Theme inspired by Xcode
+  --   'arzg/vim-colors-xcode',
+  --   priority = 1000,
+  --   config = function()
+  --     vim.cmd.colorscheme 'xcodelight'
+  --   end,
+  -- },
+  --
+  -- {
+  --   'uloco/bluloco.nvim',
+  --   lazy = false,
+  --   priority = 1000,
+  --   dependencies = { 'rktjmp/lush.nvim' },
+  --   config = function()
+  --     -- your optional config goes here, see below.
+  --     vim.cmd.colorscheme 'bluloco-light'
+  --   end,
+  -- },
+
+  {
+    -- Set lualine as statusline
+    'nvim-lualine/lualine.nvim',
+    -- See `:help lualine.txt`
+    -- opts = {
+    --   options = {
+    --     icons_enabled = false,
+    --     theme = 'onedark',
+    --     component_separators = '|',
+    --     section_separators = '',
+    --   },
+    -- },
+    opts = {
+      theme = 'auto',
+    },
   },
 
   -- NOTE: Plugins can specify dependencies.
@@ -565,9 +656,10 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
-        -- clangd = {},
+        clangd = {},
         -- gopls = {},
-        -- pyright = {},
+        pyright = {},
+        bashls={},
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --

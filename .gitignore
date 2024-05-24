@@ -3,5 +3,10 @@ test.sh
 .luarc.json
 nvim
 
-spell/
 lazy-lock.json
+
+# my setup start
+
+spell/
+
+# my setup end
