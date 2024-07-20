@@ -1,3 +1,6 @@
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
+
 --[[
 
 =====================================================================
@@ -98,6 +101,54 @@ vim.g.have_nerd_font = false
 -- NOTE: You can change these options as you wish!
 --  For more options, you can see `:help option-list`
 
+-- my vim.opt edit begin
+vim.opt.colorcolumn = '119'
+
+vim.opt.tabstop = 4
+vim.opt.shiftwidth = 4
+vim.opt.softtabstop = 4
+vim.opt.expandtab = true
+vim.opt.autoindent = true
+
+-- Set highlight on search
+vim.opt.hlsearch = false
+
+-- Make line numbers default
+vim.wo.number = true
+
+-- Enable mouse mode
+vim.opt.mouse = 'a'
+
+-- Enable break indent
+vim.opt.breakindent = true
+
+-- Save undo history
+vim.opt.undofile = true
+vim.opt.undodir = vim.fn.expand '~/temp/nvim-undodir'
+
+-- Case-insensitive searching UNLESS \C or capital in search
+vim.opt.ignorecase = true
+vim.opt.smartcase = true
+
+-- Keep signcolumn on by default
+vim.wo.signcolumn = 'yes'
+
+-- Decrease update time
+vim.opt.updatetime = 250
+vim.opt.timeoutlen = 300
+
+-- Set completeopt to have a better completion experience
+vim.opt.completeopt = 'menuone,noselect'
+
+-- NOTE: You should make sure your terminal supports this
+vim.opt.termguicolors = true
+
+-- copilot
+-- vim.g.copilot_no_tab_map = true
+vim.g.copilot_assume_mapped = true
+-- vim.api.nvim_set_keymap('i', '<C-J>', 'copilot#Accept("<CR>")', { silent = true, expr = true })
+-- my vim.opt edit end
+
 -- Make line numbers default
 vim.opt.number = true
 -- You can also add relative line numbers, to help with jumping.
@@ -105,7 +156,7 @@ vim.opt.number = true
 -- vim.opt.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
-vim.opt.mouse = 'a'
+-- vim.opt.mouse = 'a'
 
 -- Don't show the mode, since it's already in the status line
 vim.opt.showmode = false
@@ -228,8 +279,516 @@ vim.opt.rtp:prepend(lazypath)
 --
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup({
-  -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
+
+  -- my plugins begin
+
+  {
+    'justinmk/vim-syntax-extra',
+  },
+
+  {
+    'mrcjkb/rustaceanvim',
+    version = '^4',
+    lazy = false,
+  },
+
+  {
+    'Civitasv/cmake-tools.nvim',
+    config = function()
+      local osys = require 'cmake-tools.osys'
+      require('cmake-tools').setup {
+        cmake_command = 'cmake', -- this is used to specify cmake command path
+        ctest_command = 'ctest', -- this is used to specify ctest command path
+        cmake_use_preset = true,
+        cmake_regenerate_on_save = true, -- auto generate when save CMakeLists.txt
+        cmake_generate_options = { '-DCMAKE_EXPORT_COMPILE_COMMANDS=1' }, -- this will be passed when invoke `CMakeGenerate`
+        cmake_build_options = {}, -- this will be passed when invoke `CMakeBuild`
+        -- support macro expansion:
+        --       ${kit}
+        --       ${kitGenerator}
+        --       ${variant:xx}
+        cmake_build_directory = function()
+          if osys.iswin32 then
+            return 'out\\${variant:buildType}'
+          end
+          return 'out/${variant:buildType}'
+        end, -- this is used to specify generate directory for cmake, allows macro expansion, can be a string or a function returning the string, relative to cwd.
+        cmake_soft_link_compile_commands = true, -- this will automatically make a soft link from compile commands file to project root dir
+        cmake_compile_commands_from_lsp = false, -- this will automatically set compile commands file location using lsp, to use it, please set `cmake_soft_link_compile_commands` to false
+        cmake_kits_path = nil, -- this is used to specify global cmake kits path, see CMakeKits for detailed usage
+        cmake_variants_message = {
+          short = { show = true }, -- whether to show short message
+          long = { show = true, max_length = 40 }, -- whether to show long message
+        },
+        cmake_dap_configuration = { -- debug settings for cmake
+          name = 'cpp',
+          type = 'codelldb',
+          request = 'launch',
+          stopOnEntry = false,
+          runInTerminal = true,
+          console = 'integratedTerminal',
+        },
+        cmake_executor = { -- executor to use
+          name = 'quickfix', -- name of the executor
+          opts = {}, -- the options the executor will get, possible values depend on the executor type. See `default_opts` for possible values.
+          default_opts = { -- a list of default and possible values for executors
+            quickfix = {
+              show = 'always', -- "always", "only_on_error"
+              position = 'belowright', -- "vertical", "horizontal", "leftabove", "aboveleft", "rightbelow", "belowright", "topleft", "botright", use `:h vertical` for example to see help on them
+              size = 10,
+              encoding = 'utf-8', -- if encoding is not "utf-8", it will be converted to "utf-8" using `vim.fn.iconv`
+              auto_close_when_success = true, -- typically, you can use it with the "always" option; it will auto-close the quickfix buffer if the execution is successful.
+            },
+            toggleterm = {
+              direction = 'float', -- 'vertical' | 'horizontal' | 'tab' | 'float'
+              close_on_exit = false, -- whether close the terminal when exit
+              auto_scroll = true, -- whether auto scroll to the bottom
+              singleton = true, -- single instance, autocloses the opened one, if present
+            },
+            overseer = {
+              new_task_opts = {
+                strategy = {
+                  'toggleterm',
+                  direction = 'horizontal',
+                  autos_croll = true,
+                  quit_on_exit = 'success',
+                },
+              }, -- options to pass into the `overseer.new_task` command
+              on_new_task = function(task)
+                require('overseer').open { enter = false, direction = 'right' }
+              end, -- a function that gets overseer.Task when it is created, before calling `task:start`
+            },
+            terminal = {
+              name = 'Main Terminal',
+              prefix_name = '[CMakeTools]: ', -- This must be included and must be unique, otherwise the terminals will not work. Do not use a simple spacebar " ", or any generic name
+              split_direction = 'horizontal', -- "horizontal", "vertical"
+              split_size = 11,
+
+              -- Window handling
+              single_terminal_per_instance = true, -- Single viewport, multiple windows
+              single_terminal_per_tab = true, -- Single viewport per tab
+              keep_terminal_static_location = true, -- Static location of the viewport if avialable
+
+              -- Running Tasks
+              start_insert = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
+              focus = false, -- Focus on terminal when cmake task is launched.
+              do_not_add_newline = false, -- Do not hit enter on the command inserted when using :CMakeRun, allowing a chance to review or modify the command before hitting enter.
+            }, -- terminal executor uses the values in cmake_terminal
+          },
+        },
+        cmake_runner = { -- runner to use
+          name = 'terminal', -- name of the runner
+          opts = {}, -- the options the runner will get, possible values depend on the runner type. See `default_opts` for possible values.
+          default_opts = { -- a list of default and possible values for runners
+            quickfix = {
+              show = 'always', -- "always", "only_on_error"
+              position = 'belowright', -- "bottom", "top"
+              size = 10,
+              encoding = 'utf-8',
+              auto_close_when_success = true, -- typically, you can use it with the "always" option; it will auto-close the quickfix buffer if the execution is successful.
+            },
+            toggleterm = {
+              direction = 'float', -- 'vertical' | 'horizontal' | 'tab' | 'float'
+              close_on_exit = false, -- whether close the terminal when exit
+              auto_scroll = true, -- whether auto scroll to the bottom
+              singleton = true, -- single instance, autocloses the opened one, if present
+            },
+            overseer = {
+              new_task_opts = {
+                strategy = {
+                  'toggleterm',
+                  direction = 'horizontal',
+                  autos_croll = true,
+                  quit_on_exit = 'success',
+                },
+              }, -- options to pass into the `overseer.new_task` command
+              on_new_task = function(task) end, -- a function that gets overseer.Task when it is created, before calling `task:start`
+            },
+            terminal = {
+              name = 'Main Terminal',
+              prefix_name = '[CMakeTools]: ', -- This must be included and must be unique, otherwise the terminals will not work. Do not use a simple spacebar " ", or any generic name
+              split_direction = 'horizontal', -- "horizontal", "vertical"
+              split_size = 11,
+
+              -- Window handling
+              single_terminal_per_instance = true, -- Single viewport, multiple windows
+              single_terminal_per_tab = true, -- Single viewport per tab
+              keep_terminal_static_location = true, -- Static location of the viewport if avialable
+
+              -- Running Tasks
+              start_insert = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
+              focus = false, -- Focus on terminal when cmake task is launched.
+              do_not_add_newline = false, -- Do not hit enter on the command inserted when using :CMakeRun, allowing a chance to review or modify the command before hitting enter.
+            },
+          },
+        },
+        cmake_notifications = {
+          runner = { enabled = true },
+          executor = { enabled = true },
+          spinner = { '⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏' }, -- icons used for progress display
+          refresh_rate_ms = 100, -- how often to iterate icons
+        },
+        cmake_virtual_text_support = true, -- Show the target related to current file using virtual text (at right corner)
+      }
+    end,
+  },
+
+  'lambdalisue/vim-suda',
+
+  {
+    'akinsho/toggleterm.nvim',
+    version = '*',
+    config = function()
+      require('toggleterm').setup {
+        open_mapping = [[<c-t>]],
+        direction = 'vertical',
+        size = function(term)
+          if term.direction == 'horizontal' then
+            return vim.o.lines * 0.5 -- half of the window height for horizontal terminals
+          elseif term.direction == 'vertical' then
+            return vim.o.columns * 0.5 -- half of the window width for vertical terminals
+          end
+        end,
+        float_opts = {
+          border = 'single',
+          highlights = {
+            border = 'Normal',
+            background = 'Normal',
+          },
+        },
+      }
+    end,
+  },
+
+  'tpope/vim-fugitive',
+
+  {
+    'fei6409/log-highlight.nvim',
+    config = function()
+      require('log-highlight').setup {}
+    end,
+  },
+
+  -- "gc" to comment visual regions/lines
+  { 'numToStr/Comment.nvim', opts = {} },
+
+  'github/copilot.vim',
+
+  'sindrets/diffview.nvim',
+
+  {
+    'NeogitOrg/neogit',
+    dependencies = {
+      'nvim-lua/plenary.nvim', -- required
+      'sindrets/diffview.nvim', -- optional - Diff integration
+
+      -- Only one of these is needed, not both.
+      'nvim-telescope/telescope.nvim', -- optional
+    },
+    config = function()
+      require('neogit').setup {
+        -- Hides the hints at the top of the status buffer
+        disable_hint = false,
+        -- Disables changing the buffer highlights based on where the cursor is.
+        disable_context_highlighting = false,
+        -- Disables signs for sections/items/hunks
+        disable_signs = false,
+        -- Changes what mode the Commit Editor starts in. `true` will leave nvim in normal mode, `false` will change nvim to
+        -- insert mode, and `"auto"` will change nvim to insert mode IF the commit message is empty, otherwise leaving it in
+        -- normal mode.
+        disable_insert_on_commit = 'auto',
+        -- When enabled, will watch the `.git/` directory for changes and refresh the status buffer in response to filesystem
+        -- events.
+        filewatcher = {
+          interval = 1000,
+          enabled = true,
+        },
+        -- "ascii"   is the graph the git CLI generates
+        -- "unicode" is the graph like https://github.com/rbong/vim-flog
+        graph_style = 'ascii',
+        -- Used to generate URL's for branch popup action "pull request".
+        git_services = {
+          -- ['github.com'] = 'https://github.com/${owner}/${repository}/compare/${branch_name}?expand=1',
+          -- ['bitbucket.org'] = 'https://bitbucket.org/${owner}/${repository}/pull-requests/new?source=${branch_name}&t=1',
+          -- ['gitlab.com'] = 'https://gitlab.com/${owner}/${repository}/merge_requests/new?merge_request[source_branch]=${branch_name}',
+        },
+        -- Allows a different telescope sorter. Defaults to 'fuzzy_with_index_bias'. The example below will use the native fzf
+        -- sorter instead. By default, this function returns `nil`.
+        telescope_sorter = function()
+          return require('telescope').extensions.fzf.native_fzf_sorter()
+        end,
+        -- Persist the values of switches/options within and across sessions
+        remember_settings = true,
+        -- Scope persisted settings on a per-project basis
+        use_per_project_settings = true,
+        -- Table of settings to never persist. Uses format "Filetype--cli-value"
+        ignored_settings = {
+          'NeogitPushPopup--force-with-lease',
+          'NeogitPushPopup--force',
+          'NeogitPullPopup--rebase',
+          'NeogitCommitPopup--allow-empty',
+          'NeogitRevertPopup--no-edit',
+        },
+        -- Configure highlight group features
+        highlight = {
+          italic = true,
+          bold = true,
+          underline = true,
+        },
+        -- Set to false if you want to be responsible for creating _ALL_ keymappings
+        use_default_keymaps = true,
+        -- Neogit refreshes its internal state after specific events, which can be expensive depending on the repository size.
+        -- Disabling `auto_refresh` will make it so you have to manually refresh the status after you open it.
+        auto_refresh = true,
+        -- Value used for `--sort` option for `git branch` command
+        -- By default, branches will be sorted by commit date descending
+        -- Flag description: https://git-scm.com/docs/git-branch#Documentation/git-branch.txt---sortltkeygt
+        -- Sorting keys: https://git-scm.com/docs/git-for-each-ref#_options
+        sort_branches = '-committerdate',
+        -- Change the default way of opening neogit
+        kind = 'tab',
+        -- Disable line numbers and relative line numbers
+        disable_line_numbers = true,
+        -- The time after which an output console is shown for slow running commands
+        console_timeout = 2000,
+        -- Automatically show console if a command takes more than console_timeout milliseconds
+        auto_show_console = true,
+        -- Automatically close the console if the process exits with a 0 (success) status
+        auto_close_console = true,
+        status = {
+          show_head_commit_hash = true,
+          recent_commit_count = 10,
+          HEAD_padding = 10,
+          mode_padding = 3,
+          mode_text = {
+            M = 'modified',
+            N = 'new file',
+            A = 'added',
+            D = 'deleted',
+            C = 'copied',
+            U = 'updated',
+            R = 'renamed',
+            DD = 'unmerged',
+            AU = 'unmerged',
+            UD = 'unmerged',
+            UA = 'unmerged',
+            DU = 'unmerged',
+            AA = 'unmerged',
+            UU = 'unmerged',
+            ['?'] = '',
+          },
+        },
+        commit_editor = {
+          kind = 'tab',
+          show_staged_diff = true,
+          -- Accepted values:
+          -- "split" to show the staged diff below the commit editor
+          -- "vsplit" to show it to the right
+          -- "split_above" Like :top split
+          -- "vsplit_left" like :vsplit, but open to the left
+          -- "auto" "vsplit" if window would have 80 cols, otherwise "split"
+          staged_diff_split_kind = 'split',
+        },
+        commit_select_view = {
+          kind = 'tab',
+        },
+        commit_view = {
+          kind = 'vsplit',
+          verify_commit = vim.fn.executable 'gpg' == 1, -- Can be set to true or false, otherwise we try to find the binary
+        },
+        log_view = {
+          kind = 'tab',
+        },
+        rebase_editor = {
+          kind = 'auto',
+        },
+        reflog_view = {
+          kind = 'tab',
+        },
+        merge_editor = {
+          kind = 'auto',
+        },
+        tag_editor = {
+          kind = 'auto',
+        },
+        preview_buffer = {
+          kind = 'split',
+        },
+        popup = {
+          kind = 'split',
+        },
+        signs = {
+          -- { CLOSED, OPENED }
+          hunk = { '', '' },
+          item = { '>', 'v' },
+          section = { '>', 'v' },
+        },
+        -- Each Integration is auto-detected through plugin presence, however, it can be disabled by setting to `false`
+        integrations = {
+          -- If enabled, use telescope for menu selection rather than vim.ui.select.
+          -- Allows multi-select and some things that vim.ui.select doesn't.
+          telescope = true,
+          -- Neogit only provides inline diffs. If you want a more traditional way to look at diffs, you can use `diffview`.
+          -- The diffview integration enables the diff popup.
+          --
+          -- Requires you to have `sindrets/diffview.nvim` installed.
+          diffview = true,
+
+          -- If enabled, uses fzf-lua for menu selection. If the telescope integration
+          -- is also selected then telescope is used instead
+          -- Requires you to have `ibhagwan/fzf-lua` installed.
+          fzf_lua = false,
+        },
+        sections = {
+          -- Reverting/Cherry Picking
+          sequencer = {
+            folded = false,
+            hidden = false,
+          },
+          untracked = {
+            folded = false,
+            hidden = false,
+          },
+          unstaged = {
+            folded = false,
+            hidden = false,
+          },
+          staged = {
+            folded = false,
+            hidden = false,
+          },
+          stashes = {
+            folded = true,
+            hidden = false,
+          },
+          unpulled_upstream = {
+            folded = true,
+            hidden = false,
+          },
+          unmerged_upstream = {
+            folded = false,
+            hidden = false,
+          },
+          unpulled_pushRemote = {
+            folded = true,
+            hidden = false,
+          },
+          unmerged_pushRemote = {
+            folded = false,
+            hidden = false,
+          },
+          recent = {
+            folded = true,
+            hidden = false,
+          },
+          rebase = {
+            folded = true,
+            hidden = false,
+          },
+        },
+        mappings = {
+          commit_editor = {
+            ['q'] = 'Close',
+            ['<c-c><c-c>'] = 'Submit',
+            ['<c-c><c-k>'] = 'Abort',
+          },
+          commit_editor_I = {
+            ['<c-c><c-c>'] = 'Submit',
+            ['<c-c><c-k>'] = 'Abort',
+          },
+          rebase_editor = {
+            ['p'] = 'Pick',
+            ['r'] = 'Reword',
+            ['e'] = 'Edit',
+            ['s'] = 'Squash',
+            ['f'] = 'Fixup',
+            ['x'] = 'Execute',
+            ['d'] = 'Drop',
+            ['b'] = 'Break',
+            ['q'] = 'Close',
+            ['<cr>'] = 'OpenCommit',
+            ['gk'] = 'MoveUp',
+            ['gj'] = 'MoveDown',
+            ['<c-c><c-c>'] = 'Submit',
+            ['<c-c><c-k>'] = 'Abort',
+            ['[c'] = 'OpenOrScrollUp',
+            [']c'] = 'OpenOrScrollDown',
+          },
+          rebase_editor_I = {
+            ['<c-c><c-c>'] = 'Submit',
+            ['<c-c><c-k>'] = 'Abort',
+          },
+          finder = {
+            ['<cr>'] = 'Select',
+            ['<c-c>'] = 'Close',
+            ['<esc>'] = 'Close',
+            ['<c-n>'] = 'Next',
+            ['<c-p>'] = 'Previous',
+            ['<down>'] = 'Next',
+            ['<up>'] = 'Previous',
+            ['<tab>'] = 'MultiselectToggleNext',
+            ['<s-tab>'] = 'MultiselectTogglePrevious',
+            ['<c-j>'] = 'NOP',
+          },
+          -- Setting any of these to `false` will disable the mapping.
+          popup = {
+            ['?'] = 'HelpPopup',
+            ['A'] = 'CherryPickPopup',
+            ['D'] = 'DiffPopup',
+            ['M'] = 'RemotePopup',
+            ['P'] = 'PushPopup',
+            ['X'] = 'ResetPopup',
+            ['Z'] = 'StashPopup',
+            ['b'] = 'BranchPopup',
+            ['B'] = 'BisectPopup',
+            ['c'] = 'CommitPopup',
+            ['f'] = 'FetchPopup',
+            ['l'] = 'LogPopup',
+            ['m'] = 'MergePopup',
+            ['p'] = 'PullPopup',
+            ['r'] = 'RebasePopup',
+            ['v'] = 'RevertPopup',
+            ['w'] = 'WorktreePopup',
+          },
+          status = {
+            ['k'] = 'MoveUp',
+            ['j'] = 'MoveDown',
+            ['q'] = 'Close',
+            ['o'] = 'OpenTree',
+            ['I'] = 'InitRepo',
+            ['1'] = 'Depth1',
+            ['2'] = 'Depth2',
+            ['3'] = 'Depth3',
+            ['4'] = 'Depth4',
+            ['<tab>'] = 'Toggle',
+            ['x'] = 'Discard',
+            ['s'] = 'Stage',
+            ['S'] = 'StageUnstaged',
+            ['<c-s>'] = 'StageAll',
+            ['K'] = 'Untrack',
+            ['u'] = 'Unstage',
+            ['U'] = 'UnstageStaged',
+            ['$'] = 'CommandHistory',
+            ['Y'] = 'YankSelected',
+            ['<c-r>'] = 'RefreshBuffer',
+            ['<enter>'] = 'GoToFile',
+            ['<c-v>'] = 'VSplitOpen',
+            ['<c-x>'] = 'SplitOpen',
+            ['<c-t>'] = 'TabOpen',
+            ['{'] = 'GoToPreviousHunkHeader',
+            ['}'] = 'GoToNextHunkHeader',
+            ['[c'] = 'OpenOrScrollUp',
+            [']c'] = 'OpenOrScrollDown',
+          },
+        },
+      }
+    end,
+  },
+
+  -- my plugins end
+
+  -- NOTE: First, some plugins that don't require any configuration
 
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
@@ -237,6 +796,11 @@ require('lazy').setup({
   --
   -- Use `opts = {}` to force a plugin to be loaded.
   --
+  --  This is equivalent to:
+  --    require('Comment').setup({})
+
+  -- "gc" to comment visual regions/lines
+  { 'numToStr/Comment.nvim', opts = {} },
 
   -- Here is a more advanced example where we pass configuration
   -- options to `gitsigns.nvim`. This is equivalent to the following Lua:
@@ -324,6 +888,16 @@ require('lazy').setup({
       },
     },
   },
+  -- {
+  --   'uloco/bluloco.nvim',
+  --   lazy = false,
+  --   priority = 1000,
+  --   dependencies = { 'rktjmp/lush.nvim' },
+  --   config = function()
+  --     -- your optional config goes here, see below.
+  --     vim.cmd.colorscheme 'bluloco-light'
+  --   end,
+  -- },
 
   -- NOTE: Plugins can specify dependencies.
   --
@@ -411,6 +985,7 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
       vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
+      vim.keymap.set('n', '<leader>sc', builtin.commands, { desc = '[c] Find commands' })
 
       -- Slightly advanced example of overriding default behavior and theme
       vim.keymap.set('n', '<leader>/', function()
@@ -543,6 +1118,10 @@ require('lazy').setup({
           -- or a suggestion from your LSP for this to activate.
           map('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction', { 'n', 'x' })
 
+          -- Opens a popup that displays documentation about the word under your cursor
+          --  See `:help K` for why this keymap.
+          -- map('K', vim.lsp.buf.hover, 'Hover Documentation') -- conflict with colemak
+
           -- WARN: This is not Goto Definition, this is Goto Declaration.
           --  For example, in C this would take you to the header.
           map('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
@@ -605,10 +1184,10 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
-        -- clangd = {},
-        -- gopls = {},
-        -- pyright = {},
-        -- rust_analyzer = {},
+        clangd = {},
+        gopls = {},
+        pyright = {},
+        rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
         -- Some languages (like typescript) have entire language plugins that can be useful:
@@ -629,6 +1208,9 @@ require('lazy').setup({
               },
               -- You can toggle below to ignore Lua_LS's noisy `missing-fields` warnings
               -- diagnostics = { disable = { 'missing-fields' } },
+              diagnostics = {
+                globals = { 'vim' },
+              },
             },
           },
         },
@@ -667,8 +1249,38 @@ require('lazy').setup({
 
   { -- Autoformat
     'stevearc/conform.nvim',
-    event = { 'BufWritePre' },
-    cmd = { 'ConformInfo' },
+    config = function()
+      require('conform').setup {
+        log_level = vim.log.levels.DEBUG,
+        notify_on_error = true,
+        formatters_by_ft = {
+          lua = { 'stylua' },
+          -- Conform can also run multiple formatters sequentially
+          python = { 'isort', 'black' },
+          --
+          -- You can use a sub-list to tell conform to run *until* a formatter
+          -- is found.
+          javascript = { { 'prettierd', 'prettier' } },
+          typescript = { 'prettier' },
+          javascriptreact = { 'prettier' },
+          typescriptreact = { 'prettier' },
+          css = { 'prettier' },
+          html = { 'prettier' },
+          json = { 'prettier' },
+          yaml = { 'prettier' },
+          markdown = { 'markdownlint' },
+          graphql = { 'prettier' },
+          formatters = {
+            sqlfluff = {
+              command = 'sqlfluff',
+              args = { 'lint', '--format', 'sql' },
+              rootPatterns = { '.git' },
+            },
+          },
+        },
+      }
+    end,
+    lazy = false,
     keys = {
       {
         '<leader>f',
@@ -677,33 +1289,6 @@ require('lazy').setup({
         end,
         mode = '',
         desc = '[F]ormat buffer',
-      },
-    },
-    opts = {
-      notify_on_error = false,
-      format_on_save = function(bufnr)
-        -- Disable "format_on_save lsp_fallback" for languages that don't
-        -- have a well standardized coding style. You can add additional
-        -- languages here or re-enable it for the disabled ones.
-        local disable_filetypes = { c = true, cpp = true }
-        local lsp_format_opt
-        if disable_filetypes[vim.bo[bufnr].filetype] then
-          lsp_format_opt = 'never'
-        else
-          lsp_format_opt = 'fallback'
-        end
-        return {
-          timeout_ms = 500,
-          lsp_format = lsp_format_opt,
-        }
-      end,
-      formatters_by_ft = {
-        lua = { 'stylua' },
-        -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
-        --
-        -- You can use 'stop_after_first' to run the first available formatter from the list
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
       },
     },
   },
@@ -728,12 +1313,12 @@ require('lazy').setup({
           -- `friendly-snippets` contains a variety of premade snippets.
           --    See the README about individual language/framework/plugin snippets:
           --    https://github.com/rafamadriz/friendly-snippets
-          -- {
-          --   'rafamadriz/friendly-snippets',
-          --   config = function()
-          --     require('luasnip.loaders.from_vscode').lazy_load()
-          --   end,
-          -- },
+          {
+            'rafamadriz/friendly-snippets',
+            config = function()
+              require('luasnip.loaders.from_vscode').lazy_load()
+            end,
+          },
         },
       },
       'saadparwaiz1/cmp_luasnip',
@@ -835,12 +1420,78 @@ require('lazy').setup({
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+
+      -- vim.cmd.colorscheme 'tokyonight-night'
 
       -- You can configure highlights by doing something like:
       vim.cmd.hi 'Comment gui=none'
     end,
   },
+
+  {
+    'navarasu/onedark.nvim',
+    priority = 1000,
+    init = function()
+      vim.cmd.colorscheme 'onedark'
+      vim.cmd.hi 'Comment gui=none'
+    end,
+    config = function()
+      require('onedark').setup {
+        style = 'darker',
+      }
+    end,
+  },
+
+  {
+    'xiyaowong/transparent.nvim',
+    priority = 1000,
+    config = function()
+      vim.cmd 'TransparentEnable'
+    end,
+  },
+
+  -- lazy.nvim
+  {
+    'folke/noice.nvim',
+    event = 'VeryLazy',
+    opts = {
+      -- add any options here
+    },
+    dependencies = {
+      -- if you lazy-load any plugin below, make sure to add proper `module="..."` entries
+      'MunifTanjim/nui.nvim',
+      -- OPTIONAL:
+      --   `nvim-notify` is only needed, if you want to use the notification view.
+      --   If not available, we use `mini` as the fallback
+      'rcarriga/nvim-notify',
+    },
+    config = function()
+      require('notify').setup {
+        background_colour = '#000000',
+      }
+
+      require('noice').setup {
+        lsp = {
+          -- override markdown rendering so that **cmp** and other plugins use **Treesitter**
+          override = {
+            ['vim.lsp.util.convert_input_to_markdown_lines'] = true,
+            ['vim.lsp.util.stylize_markdown'] = true,
+            ['cmp.entry.get_documentation'] = true, -- requires hrsh7th/nvim-cmp
+          },
+        },
+        -- you can enable a preset for easier configuration
+        presets = {
+          bottom_search = true, -- use a classic bottom cmdline for search
+          command_palette = true, -- position the cmdline and popupmenu together
+          long_message_to_split = true, -- long messages will be sent to a split
+          inc_rename = false, -- enables an input dialog for inc-rename.nvim
+          lsp_doc_border = false, -- add a border to hover docs and signature help
+        },
+      }
+    end,
+  },
+
+  -- somewhere in your config:
 
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
@@ -908,6 +1559,26 @@ require('lazy').setup({
     --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
   },
 
+  {
+    'nvim-treesitter/nvim-treesitter-context',
+    config = function()
+      require('treesitter-context').setup {
+        enable = true, -- Enable this plugin (Can be enabled/disabled later via commands)
+        max_lines = 0, -- How many lines the window should span. Values <= 0 mean no limit.
+        min_window_height = 0, -- Minimum editor window height to enable context. Values <= 0 mean no limit.
+        line_numbers = true,
+        multiline_threshold = 20, -- Maximum number of lines to show for a single context
+        trim_scope = 'outer', -- Which context lines to discard if `max_lines` is exceeded. Choices: 'inner', 'outer'
+        mode = 'cursor', -- Line used to calculate contextnegg. Choices: 'cursor', 'topline'
+        -- Separator between context and content. Should be a single character string, like '-'.
+        -- When separator is set, the context will only show up when there are at least 2 lines above cursorline.
+        separator = nil,
+        zindex = 20, -- The Z-index of the context window
+        on_attach = nil, -- (fun(buf: integer): boolean) return false to disable attaching
+      }
+    end,
+  },
+
   -- The following two comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
   -- place them in the correct locations.
@@ -917,19 +1588,19 @@ require('lazy').setup({
   --  Here are some example plugins that I've included in the Kickstart repository.
   --  Uncomment any of the lines below to enable them (you will need to restart nvim).
   --
-  -- require 'kickstart.plugins.debug',
-  -- require 'kickstart.plugins.indent_line',
-  -- require 'kickstart.plugins.lint',
-  -- require 'kickstart.plugins.autopairs',
-  -- require 'kickstart.plugins.neo-tree',
-  -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+  require 'kickstart.plugins.debug',
+  require 'kickstart.plugins.indent_line',
+  require 'kickstart.plugins.lint',
+  require 'kickstart.plugins.autopairs',
+  require 'kickstart.plugins.neo-tree',
+  require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
   --    For additional information, see `:help lazy.nvim-lazy.nvim-structuring-your-plugins`
-  -- { import = 'custom.plugins' },
+  { import = 'custom.plugins' },
 }, {
   ui = {
     -- If you are using a Nerd Font: set icons to an empty table which will use the
@@ -954,3 +1625,79 @@ require('lazy').setup({
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
+
+-- my additional settings begin
+
+-- Set conceallevel to 0 for help files
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'help',
+  callback = function()
+    vim.wo.conceallevel = 0
+  end,
+})
+
+-- Map <leader>gf to open the file under the cursor, creating it if necessary
+vim.api.nvim_set_keymap('n', '<leader>gf', ':e <cfile><CR>', { noremap = true, silent = true })
+
+-- Remember last known cursor position when opening a file
+vim.api.nvim_create_autocmd('BufRead', {
+  callback = function(opts)
+    vim.api.nvim_create_autocmd('BufWinEnter', {
+      once = true,
+      buffer = opts.buf,
+      callback = function()
+        local ft = vim.bo[opts.buf].filetype
+        local last_known_line = vim.api.nvim_buf_get_mark(opts.buf, '"')[1]
+        if not (ft:match 'commit' and ft:match 'rebase') and last_known_line > 1 and last_known_line <= vim.api.nvim_buf_line_count(opts.buf) then
+          vim.api.nvim_feedkeys([[g`"]], 'nx', false)
+        end
+      end,
+    })
+  end,
+})
+
+-- my additional settings end
+
+-- my keymap start
+
+local function map(mode, lhs, rhs, opts)
+  local options = { noremap = true, silent = true }
+  if opts then
+    options = vim.tbl_extend('force', options, opts)
+  end
+  vim.api.nvim_set_keymap(mode, lhs, rhs, options)
+end
+
+-- colemak keybindings
+
+map('', 'n', 'gj', {})
+map('', 'N', 'J', {})
+map('', 'e', 'gk', {})
+map('', 'E', 'K', {})
+map('', 'i', 'l', {})
+map('x', 'i', 'l', {})
+map('', 'I', 'L', {})
+
+map('', 'l', 'i', {})
+map('', 'L', 'I', {})
+map('', 'k', 'n', {})
+map('', 'K', 'N', {})
+map('', 'j', 'e', {})
+map('', 'J', 'E', {})
+
+map('', 'gn', 'n', {})
+map('', 'ge', 'e', {})
+
+map('i', ',s', '<ESC>', {})
+map('', ',s', '<ESC>:w<CR>', {})
+map('', 's,', '<ESC>:w<CR>', {})
+map('', ',q', '<ESC>:bd<cr>', {})
+map('', '<c-q>', '<ESC>:qa<cr>', {})
+
+map('n', ';', ':', {})
+
+map('', '<leader>mo', '<ESC>:set nu! mouse=<CR>', {})
+
+map('', '<space>gb', ':Git blame<CR>', {})
+
+-- my keymap end
