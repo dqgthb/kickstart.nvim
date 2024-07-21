@@ -1602,7 +1602,8 @@ require('lazy').setup({
     config = function()
       require("trim").setup {
         trim_on_write = false,
-        highlight = true
+        highlight = true,
+        highlight_bg = '#590016',
       }
     end,
   },
