@@ -1446,7 +1446,7 @@ require('lazy').setup({
     'xiyaowong/transparent.nvim',
     priority = 1000,
     config = function()
-      vim.cmd 'TransparentEnable'
+      -- vim.cmd 'TransparentEnable'
     end,
   },
 
@@ -1577,6 +1577,24 @@ require('lazy').setup({
         on_attach = nil, -- (fun(buf: integer): boolean) return false to disable attaching
       }
     end,
+  },
+
+  {
+    "christoomey/vim-tmux-navigator",
+    cmd = {
+      "TmuxNavigateLeft",
+      "TmuxNavigateDown",
+      "TmuxNavigateUp",
+      "TmuxNavigateRight",
+      "TmuxNavigatePrevious",
+    },
+    keys = {
+      { "<c-h>", "<cmd>TmuxNavigateLeft<cr>" },
+      { "<c-n>", "<cmd>TmuxNavigateDown<cr>" },
+      { "<c-e>", "<cmd>TmuxNavigateUp<cr>" },
+      { "<c-i>", "<cmd>TmuxNavigateRight<cr>" },
+      { "<c-\\>", "<cmd>TmuxNavigatePrevious<cr>" },
+    },
   },
 
   -- The following two comments only work if you have downloaded the kickstart repo, not just copy pasted the
