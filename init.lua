@@ -302,7 +302,7 @@ require('lazy').setup({
         ctest_command = 'ctest', -- this is used to specify ctest command path
         cmake_use_preset = true,
         cmake_regenerate_on_save = true, -- auto generate when save CMakeLists.txt
-        cmake_generate_options = { '-DCMAKE_EXPORT_COMPILE_COMMANDS=1' }, -- this will be passed when invoke `CMakeGenerate`
+        cmake_generate_options = { '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON' }, -- this will be passed when invoke `CMakeGenerate`
         cmake_build_options = {}, -- this will be passed when invoke `CMakeBuild`
         -- support macro expansion:
         --       ${kit}
@@ -1009,6 +1009,16 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sn', function()
         builtin.find_files { cwd = vim.fn.stdpath 'config' }
       end, { desc = '[S]earch [N]eovim files' })
+
+      -- On VimEnter without arguments, open find_files
+      vim.api.nvim_create_autocmd("VimEnter", {
+        callback = function()
+          if vim.fn.argv(0) == "" then
+            require("telescope.builtin").find_files()
+          end
+        end,
+      })
+
     end,
   },
 
