@@ -1590,9 +1590,9 @@ require('lazy').setup({
     },
     keys = {
       { "<c-h>", "<cmd>TmuxNavigateLeft<cr>" },
-      { "<c-n>", "<cmd>TmuxNavigateDown<cr>" },
-      { "<c-e>", "<cmd>TmuxNavigateUp<cr>" },
-      { "<c-i>", "<cmd>TmuxNavigateRight<cr>" },
+      { "<c-j>", "<cmd>TmuxNavigateDown<cr>" },
+      { "<c-k>", "<cmd>TmuxNavigateUp<cr>" },
+      { "<c-l>", "<cmd>TmuxNavigateRight<cr>" },
       { "<c-\\>", "<cmd>TmuxNavigatePrevious<cr>" },
     },
   },
